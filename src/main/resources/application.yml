@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:aws-wrapper:mariadb://your-cluster.cluster-xxx.region.rds.amazonaws.com:3306/database
+    username: your-username
+    password: your-password
+    driver-class-name: software.amazon.jdbc.Driver
+    hikari:
+      data-source-properties:
+        wrapperPlugins: auroraConnectionTracker,failover2,efm2,readWriteSplitting
+        wrapperDialect: aurora-mysql
+        wrapperLoggerLevel: FINEST
+        wrapperLogUnclosedConnections: true
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+logging:
+  level:
+    software.amazon.jdbc: TRACE
+    com.zaxxer.hikari: DEBUG

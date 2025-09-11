@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- AWS JDBC Wrapper finest logging -->
+    <logger name="software.amazon.jdbc" level="TRACE"/>
+    <logger name="software.amazon.jdbc.plugin" level="TRACE"/>
+    <logger name="software.amazon.jdbc.wrapper" level="TRACE"/>
+    
+    <!-- HikariCP logging -->
+    <logger name="com.zaxxer.hikari" level="DEBUG"/>
+    
+    <!-- MariaDB driver logging -->
+    <logger name="org.mariadb.jdbc" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
