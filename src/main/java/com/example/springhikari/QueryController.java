@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 public class QueryController {
@@ -72,5 +76,50 @@ public class QueryController {
         }
         
         return results.toString();
+    }
+
+    @GetMapping("/load-test/{count}")
+    public String loadTest(@PathVariable int count) {
+        int durationSeconds = count * 60;
+        int requestsPerSecond = 500;
+        int totalRequests = durationSeconds * requestsPerSecond;
+        int queriesPerRequest = 5;
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(16);
+        ExecutorService requestExecutor = Executors.newFixedThreadPool(32);
+
+        Runnable shutdownTask = () -> {
+            scheduler.shutdown();
+            requestExecutor.shutdown();
+        };
+
+        Runnable task = () -> requestExecutor.submit(() -> {
+            try (Connection conn = dataSource.getConnection()) {
+                // Force connection to reader
+                conn.setReadOnly(true);
+
+                for (int i = 0; i < queriesPerRequest; i++) {
+                    try (var stmt = conn.createStatement();
+                         var rs = stmt.executeQuery("SELECT * FROM bank_test WHERE account_balance < 0;")) {
+                        while (rs.next()) {
+                            String name = rs.getString(1);
+                            System.out.println("Gathered name: " + name);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        // Schedule tasks/sec
+        for (int i = 0; i < totalRequests; i++) {
+            scheduler.schedule(task, i * (1000L / requestsPerSecond), TimeUnit.MILLISECONDS);
+        }
+
+        // Schedule shutdown after test duration
+        scheduler.schedule(shutdownTask, durationSeconds + 5, TimeUnit.SECONDS);
+
+        return "Load test (READ-ONLY) started for " + count + " minutes.";
     }
 }
